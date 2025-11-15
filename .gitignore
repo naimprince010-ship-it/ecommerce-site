@@ -1,0 +1,23 @@
+# Node and Next.js
+node_modules/
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+# Build outputs
+.next/
+out/
+dist/
+build/
+# local env files
+.env*
+# System files
+.DS_Store
+# Logs directory
+logs
+*.log
+# Coverage
+coverage/
+# Cache
+cache/
