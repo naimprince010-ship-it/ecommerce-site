@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { api, API_BASE_URL } from './api';
+import { api, API_BASE_URL, setAuthToken } from './api';
 
 function App() {
   const [credentials, setCredentials] = useState({ email: '', password: '' });
@@ -16,7 +16,10 @@ function App() {
 
   useEffect(() => {
     if (token) {
+      setAuthToken(token);
       fetchProducts();
+    } else {
+      setAuthToken(null);
     }
   }, [token]);
 
@@ -36,7 +39,7 @@ function App() {
     setMessage('');
     try {
       const res = await api.post('/api/auth/login', credentials);
-      localStorage.setItem('token', res.data.token);
+      setAuthToken(res.data.token);
       localStorage.setItem('user', JSON.stringify(res.data.user));
       setToken(res.data.token);
       setUser(res.data.user);
@@ -91,7 +94,7 @@ function App() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
+    setAuthToken(null);
     localStorage.removeItem('user');
     setToken('');
     setUser(null);
@@ -123,7 +126,10 @@ function App() {
               type="password"
               value={credentials.password}
               onChange={(e) =>
-                setCredentials((prev) => ({ ...prev, password: e.target.value }))
+                setCredentials((prev) => ({
+                  ...prev,
+                  password: e.target.value,
+                }))
               }
               required
             />
@@ -134,7 +140,8 @@ function App() {
           {message && <p className="status">{message}</p>}
         </form>
         <p className="hint">
-          Need an account? Create one via <code>/api/auth/register</code> using Postman.
+          Need an account? Create one via <code>/api/auth/register</code> using
+          Postman.
         </p>
       </div>
     );
@@ -160,7 +167,9 @@ function App() {
             <input
               type="text"
               value={form.name}
-              onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, name: e.target.value }))
+              }
               required
             />
           </label>
@@ -170,7 +179,9 @@ function App() {
               type="number"
               step="0.01"
               value={form.price}
-              onChange={(e) => setForm((prev) => ({ ...prev, price: e.target.value }))}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, price: e.target.value }))
+              }
               required
             />
           </label>
@@ -185,7 +196,11 @@ function App() {
           </label>
           <label>
             Image
-            <input type="file" accept="image/*" onChange={(e) => setImage(e.target.files[0])} />
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => setImage(e.target.files[0])}
+            />
           </label>
           <button type="submit" disabled={loading}>
             {loading ? 'Saving...' : 'Create'}
@@ -204,12 +219,20 @@ function App() {
                   <div>
                     <strong>{product.name}</strong>
                     <p>${product.price}</p>
-                    {product.description && <p className="muted">{product.description}</p>}
+                    {product.description && (
+                      <p className="muted">{product.description}</p>
+                    )}
                     {product.imageUrl && (
-                      <img src={product.imageUrl} alt={product.name} className="thumb" />
+                      <img
+                        src={product.imageUrl}
+                        alt={product.name}
+                        className="thumb"
+                      />
                     )}
                   </div>
-                  <button onClick={() => handleDelete(product._id)}>Delete</button>
+                  <button onClick={() => handleDelete(product._id)}>
+                    Delete
+                  </button>
                 </li>
               ))}
             </ul>
