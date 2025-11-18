@@ -6,6 +6,9 @@ const upload = require('../middleware/upload');
 
 const router = express.Router();
 
+// helper: valid ObjectId চেক
+const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
+
 // GET /api/products - Get all products
 router.get('/', async (req, res) => {
   try {
@@ -17,14 +20,13 @@ router.get('/', async (req, res) => {
   }
 });
 
-const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
-
 // GET /api/products/:id - Get a single product by ID
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
   if (!isValidObjectId(id)) {
     return res.status(400).json({ message: 'Invalid product ID' });
   }
+
   try {
     const product = await Product.findById(id);
     if (!product) {
@@ -49,7 +51,8 @@ const maybeUpload = (req, res, next) => {
 // POST /api/products - Create a new product
 router.post('/', auth, maybeUpload, async (req, res) => {
   const { name, description, category } = req.body;
-  const price = typeof req.body.price !== 'undefined' ? Number(req.body.price) : undefined;
+  const price =
+    typeof req.body.price !== 'undefined' ? Number(req.body.price) : undefined;
 
   if (!name || typeof price === 'undefined' || Number.isNaN(price)) {
     return res.status(400).json({ message: 'Name and numeric price are required' });
@@ -57,6 +60,7 @@ router.post('/', auth, maybeUpload, async (req, res) => {
 
   try {
     const imageUrl = req.file?.path || req.body.imageUrl;
+
     const product = new Product({ name, price, description, imageUrl, category });
     const savedProduct = await product.save();
     res.status(201).json(savedProduct);
@@ -72,6 +76,7 @@ router.put('/:id', auth, async (req, res) => {
   if (!isValidObjectId(id)) {
     return res.status(400).json({ message: 'Invalid product ID' });
   }
+
   const update = { ...req.body };
   if (typeof update.price !== 'undefined') {
     const priceNumber = Number(update.price);
@@ -104,6 +109,7 @@ router.delete('/:id', auth, async (req, res) => {
   if (!isValidObjectId(id)) {
     return res.status(400).json({ message: 'Invalid product ID' });
   }
+
   try {
     const deletedProduct = await Product.findByIdAndDelete(id);
 
