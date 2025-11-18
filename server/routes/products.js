@@ -31,8 +31,17 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+// Allow JSON-only requests to skip Multer so the existing JSON API shape keeps working
+const maybeUpload = (req, res, next) => {
+  const contentType = req.headers['content-type'] || '';
+  if (contentType.startsWith('multipart/form-data')) {
+    return upload.single('image')(req, res, next);
+  }
+  return next();
+};
+
 // POST /api/products - Create a new product
-router.post('/', auth, upload.single('image'), async (req, res) => {
+router.post('/', auth, maybeUpload, async (req, res) => {
   const { name, description, category } = req.body;
   const price = typeof req.body.price !== 'undefined' ? Number(req.body.price) : undefined;
 

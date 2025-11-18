@@ -49,7 +49,7 @@ Content-Type: application/json
 The response includes `token` and user info. Supply the token as `Authorization: Bearer <token>` when creating/updating/deleting products.
 
 ### Product image uploads
-`POST /api/products` accepts `multipart/form-data` with fields `name`, `price`, `description`, and optional file field `image`. The image is uploaded to Cloudinary and the secure URL is stored as `imageUrl`. If you omit the file, the endpoint still works.
+`POST /api/products` accepts `multipart/form-data` with fields `name`, `price`, `description`, and optional file field `image`. The image is uploaded to Cloudinary and the secure URL is stored as `imageUrl`. If you omit the file, the endpoint still works, and you can continue sending JSON payloads without multipart when you don’t need to upload an image.
 
 ## Admin frontend
 Location: `admin/` (Vite + React).
