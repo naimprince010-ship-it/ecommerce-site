@@ -6,14 +6,128 @@ const upload = require('../middleware/upload');
 
 const router = express.Router();
 
-// GET /api/products - Get all products
+const computeDiscountFields = [
+  {
+    $addFields: {
+      discountPercent: {
+        $cond: [
+          { $gt: ['$regularPrice', 0] },
+          {
+            $round: [
+              {
+                $multiply: [
+                  {
+                    $subtract: [
+                      1,
+                      {
+                        $divide: [
+                          { $ifNull: ['$discountPrice', '$regularPrice'] },
+                          '$regularPrice',
+                        ],
+                      },
+                    ],
+                  },
+                  100,
+                ],
+              },
+              0,
+            ],
+          },
+          0,
+        ],
+      },
+    },
+  },
+];
+
+const buildActiveDealMatch = (now) => ({
+  isSuperDeal: true,
+  $and: [
+    {
+      $or: [
+        { dealStart: { $exists: false } },
+        { dealStart: null },
+        { dealStart: { $lte: now } },
+      ],
+    },
+    {
+      $or: [
+        { dealEnd: { $exists: false } },
+        { dealEnd: null },
+        { dealEnd: { $gt: now } },
+      ],
+    },
+  ],
+});
+
+// GET /api/products - Get all products with super deals prioritized, pagination, and category filter
 router.get('/', async (req, res) => {
+  const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+  const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 12, 1), 50);
+  const { category } = req.query;
+
+  const matchStage = {};
+  if (category) {
+    matchStage.category = category;
+  }
+
+  const sortStage = { $sort: { isSuperDeal: -1, discountPercent: -1, createdAt: -1 } };
+  const skip = (page - 1) * limit;
+
   try {
-    const products = await Product.find();
-    res.json(products);
+    const results = await Product.aggregate([
+      { $match: matchStage },
+      ...computeDiscountFields,
+      {
+        $facet: {
+          data: [sortStage, { $skip: skip }, { $limit: limit }],
+          total: [{ $count: 'count' }],
+        },
+      },
+      {
+        $project: {
+          products: '$data',
+          total: { $ifNull: [{ $arrayElemAt: ['$total.count', 0] }, 0] },
+        },
+      },
+    ]);
+
+    const { products, total } = results[0] || { products: [], total: 0 };
+    const totalPages = Math.max(Math.ceil(total / limit), 1);
+
+    res.json({ products, total, page, limit, totalPages });
   } catch (error) {
     console.error('Error fetching products:', error);
     res.status(500).json({ message: 'Failed to fetch products' });
+  }
+});
+
+// GET /api/products/deals - Get current super deals
+router.get('/deals', async (req, res) => {
+  const now = new Date();
+  try {
+    const deals = await Product.aggregate([
+      { $match: buildActiveDealMatch(now) },
+      ...computeDiscountFields,
+      { $sort: { discountPercent: -1, createdAt: -1 } },
+      { $limit: 10 },
+    ]);
+
+    res.json(deals);
+  } catch (error) {
+    console.error('Error fetching deals:', error);
+    res.status(500).json({ message: 'Failed to fetch deals' });
+  }
+});
+
+// GET /api/products/categories - Distinct product categories for filtering
+router.get('/categories', async (req, res) => {
+  try {
+    const categories = await Product.distinct('category');
+    res.json(categories.filter(Boolean));
+  } catch (error) {
+    console.error('Error fetching categories:', error);
+    res.status(500).json({ message: 'Failed to fetch categories' });
   }
 });
 
@@ -48,16 +162,43 @@ const maybeUpload = (req, res, next) => {
 
 // POST /api/products - Create a new product
 router.post('/', auth, maybeUpload, async (req, res) => {
-  const { name, description, category } = req.body;
-  const price = typeof req.body.price !== 'undefined' ? Number(req.body.price) : undefined;
+  const { name, description, category, isSuperDeal, dealStart, dealEnd, stock } = req.body;
+  const regularPrice =
+    typeof req.body.regularPrice !== 'undefined' ? Number(req.body.regularPrice) : undefined;
+  const discountPrice =
+    typeof req.body.discountPrice !== 'undefined' ? Number(req.body.discountPrice) : undefined;
 
-  if (!name || typeof price === 'undefined' || Number.isNaN(price)) {
-    return res.status(400).json({ message: 'Name and numeric price are required' });
+  if (
+    !name ||
+    typeof regularPrice === 'undefined' ||
+    Number.isNaN(regularPrice) ||
+    typeof discountPrice === 'undefined' ||
+    Number.isNaN(discountPrice)
+  ) {
+    return res.status(400).json({ message: 'Name, regular price and discount price are required' });
+  }
+
+  if (discountPrice >= regularPrice) {
+    return res
+      .status(400)
+      .json({ message: 'Discount price must be lower than regular price' });
   }
 
   try {
     const imageUrl = req.file?.path || req.body.imageUrl;
-    const product = new Product({ name, price, description, imageUrl, category });
+    const product = new Product({
+      name,
+      description,
+      category,
+      regularPrice,
+      discountPrice,
+      isSuperDeal: isSuperDeal === 'true' || isSuperDeal === true,
+      dealStart: dealStart ? new Date(dealStart) : undefined,
+      dealEnd: dealEnd ? new Date(dealEnd) : undefined,
+      stock: typeof stock !== 'undefined' ? Number(stock) : undefined,
+      imageUrl,
+    });
+
     const savedProduct = await product.save();
     res.status(201).json(savedProduct);
   } catch (error) {
@@ -73,23 +214,63 @@ router.put('/:id', auth, async (req, res) => {
     return res.status(400).json({ message: 'Invalid product ID' });
   }
   const update = { ...req.body };
-  if (typeof update.price !== 'undefined') {
-    const priceNumber = Number(update.price);
+  if (typeof update.regularPrice !== 'undefined') {
+    const priceNumber = Number(update.regularPrice);
     if (Number.isNaN(priceNumber)) {
-      return res.status(400).json({ message: 'Price must be a number' });
+      return res.status(400).json({ message: 'Regular price must be a number' });
     }
-    update.price = priceNumber;
+    update.regularPrice = priceNumber;
+  }
+
+  if (typeof update.discountPrice !== 'undefined') {
+    const discountNumber = Number(update.discountPrice);
+    if (Number.isNaN(discountNumber)) {
+      return res.status(400).json({ message: 'Discount price must be a number' });
+    }
+    update.discountPrice = discountNumber;
+  }
+
+  if (typeof update.stock !== 'undefined') {
+    const stockNumber = Number(update.stock);
+    if (Number.isNaN(stockNumber)) {
+      return res.status(400).json({ message: 'Stock must be a number' });
+    }
+    update.stock = stockNumber;
+  }
+
+  if (typeof update.isSuperDeal !== 'undefined') {
+    update.isSuperDeal = update.isSuperDeal === 'true' || update.isSuperDeal === true;
+  }
+
+  if (update.dealStart) {
+    update.dealStart = new Date(update.dealStart);
+  }
+
+  if (update.dealEnd) {
+    update.dealEnd = new Date(update.dealEnd);
   }
 
   try {
-    const updatedProduct = await Product.findByIdAndUpdate(id, update, {
-      new: true,
-      runValidators: true,
-    });
-
-    if (!updatedProduct) {
+    const existing = await Product.findById(id);
+    if (!existing) {
       return res.status(404).json({ message: 'Product not found' });
     }
+
+    const targetRegularPrice =
+      typeof update.regularPrice !== 'undefined' ? update.regularPrice : existing.regularPrice;
+    const targetDiscountPrice =
+      typeof update.discountPrice !== 'undefined'
+        ? update.discountPrice
+        : existing.discountPrice;
+
+    if (targetRegularPrice <= 0 || targetDiscountPrice >= targetRegularPrice) {
+      return res
+        .status(400)
+        .json({ message: 'Discount price must be lower than regular price' });
+    }
+
+    Object.assign(existing, update);
+    const updatedProduct = await existing.save();
 
     res.json(updatedProduct);
   } catch (error) {

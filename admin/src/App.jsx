@@ -9,7 +9,17 @@ function App() {
     return stored ? JSON.parse(stored) : null;
   });
   const [products, setProducts] = useState([]);
-  const [form, setForm] = useState({ name: '', price: '', description: '' });
+  const [form, setForm] = useState({
+    name: '',
+    regularPrice: '',
+    discountPrice: '',
+    description: '',
+    category: '',
+    isSuperDeal: false,
+    dealStart: '',
+    dealEnd: '',
+    stock: '',
+  });
   const [image, setImage] = useState(null);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -53,16 +63,45 @@ function App() {
     }
   };
 
+  const discountPercent = (() => {
+    const regular = Number(form.regularPrice);
+    const discount = Number(form.discountPrice);
+    if (!Number.isFinite(regular) || regular <= 0 || !Number.isFinite(discount)) {
+      return 0;
+    }
+    return Math.max(0, Math.round(((regular - discount) / regular) * 100));
+  })();
+
   const handleCreate = async (e) => {
     e.preventDefault();
     setLoading(true);
     setMessage('');
 
+    const regular = Number(form.regularPrice);
+    const discount = Number(form.discountPrice);
+    if (!form.name || Number.isNaN(regular) || Number.isNaN(discount)) {
+      setMessage('Name, regular price and discount price are required');
+      setLoading(false);
+      return;
+    }
+
+    if (discount >= regular) {
+      setMessage('Discount price must be less than regular price');
+      setLoading(false);
+      return;
+    }
+
     try {
       const formData = new FormData();
       formData.append('name', form.name);
-      formData.append('price', form.price);
+      formData.append('regularPrice', regular);
+      formData.append('discountPrice', discount);
       formData.append('description', form.description);
+      formData.append('category', form.category);
+      formData.append('isSuperDeal', form.isSuperDeal);
+      if (form.dealStart) formData.append('dealStart', form.dealStart);
+      if (form.dealEnd) formData.append('dealEnd', form.dealEnd);
+      if (form.stock !== '') formData.append('stock', form.stock);
       if (image) {
         formData.append('image', image);
       }
@@ -72,7 +111,17 @@ function App() {
       });
 
       setMessage('Product created');
-      setForm({ name: '', price: '', description: '' });
+      setForm({
+        name: '',
+        regularPrice: '',
+        discountPrice: '',
+        description: '',
+        category: '',
+        isSuperDeal: false,
+        dealStart: '',
+        dealEnd: '',
+        stock: '',
+      });
       setImage(null);
       await fetchProducts();
     } catch (error) {
@@ -174,16 +223,29 @@ function App() {
             />
           </label>
           <label>
-            Price
+            Regular Price
             <input
               type="number"
               step="0.01"
-              value={form.price}
+              value={form.regularPrice}
               onChange={(e) =>
-                setForm((prev) => ({ ...prev, price: e.target.value }))
+                setForm((prev) => ({ ...prev, regularPrice: e.target.value }))
               }
               required
             />
+          </label>
+          <label>
+            Discount Price
+            <input
+              type="number"
+              step="0.01"
+              value={form.discountPrice}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, discountPrice: e.target.value }))
+              }
+              required
+            />
+            <small className="muted">You are giving {discountPercent}% off.</small>
           </label>
           <label>
             Description
@@ -191,6 +253,59 @@ function App() {
               value={form.description}
               onChange={(e) =>
                 setForm((prev) => ({ ...prev, description: e.target.value }))
+              }
+            />
+          </label>
+          <label>
+            Category
+            <input
+              type="text"
+              value={form.category}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, category: e.target.value }))
+              }
+            />
+          </label>
+          <label className="checkbox">
+            <input
+              type="checkbox"
+              checked={form.isSuperDeal}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, isSuperDeal: e.target.checked }))
+              }
+            />
+            <span>Is Super Deal</span>
+          </label>
+          <div className="grid two-col">
+            <label>
+              Deal Start
+              <input
+                type="date"
+                value={form.dealStart}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, dealStart: e.target.value }))
+                }
+              />
+            </label>
+            <label>
+              Deal End
+              <input
+                type="date"
+                value={form.dealEnd}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, dealEnd: e.target.value }))
+                }
+              />
+            </label>
+          </div>
+          <label>
+            Stock
+            <input
+              type="number"
+              min="0"
+              value={form.stock}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, stock: e.target.value }))
               }
             />
           </label>
@@ -218,7 +333,15 @@ function App() {
                 <li key={product._id} className="product-item">
                   <div>
                     <strong>{product.name}</strong>
-                    <p>${product.price}</p>
+                    <p>
+                      <span className="muted">${product.regularPrice?.toFixed(2)}</span>{' '}
+                      <strong>${product.discountPrice?.toFixed(2)}</strong>
+                      {typeof product.discountPercent === 'number' && (
+                        <span className="pill small">-{product.discountPercent}%</span>
+                      )}
+                    </p>
+                    <p className="muted">Stock: {product.stock ?? 0}</p>
+                    {product.isSuperDeal && <p className="pill success">Super Deal</p>}
                     {product.description && (
                       <p className="muted">{product.description}</p>
                     )}
