@@ -20,7 +20,10 @@ const computeDiscountFields = [
                     $subtract: [
                       1,
                       {
-                        $divide: ['$discountPrice', '$regularPrice'],
+                        $divide: [
+                          { $ifNull: ['$discountPrice', '$regularPrice'] },
+                          '$regularPrice',
+                        ],
                       },
                     ],
                   },
@@ -37,14 +40,62 @@ const computeDiscountFields = [
   },
 ];
 
-// GET /api/products - Get all products with super deals prioritized
+const buildActiveDealMatch = (now) => ({
+  isSuperDeal: true,
+  $and: [
+    {
+      $or: [
+        { dealStart: { $exists: false } },
+        { dealStart: null },
+        { dealStart: { $lte: now } },
+      ],
+    },
+    {
+      $or: [
+        { dealEnd: { $exists: false } },
+        { dealEnd: null },
+        { dealEnd: { $gt: now } },
+      ],
+    },
+  ],
+});
+
+// GET /api/products - Get all products with super deals prioritized, pagination, and category filter
 router.get('/', async (req, res) => {
+  const page = Math.max(parseInt(req.query.page, 10) || 1, 1);
+  const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 12, 1), 50);
+  const { category } = req.query;
+
+  const matchStage = {};
+  if (category) {
+    matchStage.category = category;
+  }
+
+  const sortStage = { $sort: { isSuperDeal: -1, discountPercent: -1, createdAt: -1 } };
+  const skip = (page - 1) * limit;
+
   try {
-    const products = await Product.aggregate([
+    const results = await Product.aggregate([
+      { $match: matchStage },
       ...computeDiscountFields,
-      { $sort: { isSuperDeal: -1, discountPercent: -1, createdAt: -1 } },
+      {
+        $facet: {
+          data: [sortStage, { $skip: skip }, { $limit: limit }],
+          total: [{ $count: 'count' }],
+        },
+      },
+      {
+        $project: {
+          products: '$data',
+          total: { $ifNull: [{ $arrayElemAt: ['$total.count', 0] }, 0] },
+        },
+      },
     ]);
-    res.json(products);
+
+    const { products, total } = results[0] || { products: [], total: 0 };
+    const totalPages = Math.max(Math.ceil(total / limit), 1);
+
+    res.json({ products, total, page, limit, totalPages });
   } catch (error) {
     console.error('Error fetching products:', error);
     res.status(500).json({ message: 'Failed to fetch products' });
@@ -56,27 +107,7 @@ router.get('/deals', async (req, res) => {
   const now = new Date();
   try {
     const deals = await Product.aggregate([
-      {
-        $match: {
-          isSuperDeal: true,
-          $and: [
-            {
-              $or: [
-                { dealStart: { $exists: false } },
-                { dealStart: null },
-                { dealStart: { $lte: now } },
-              ],
-            },
-            {
-              $or: [
-                { dealEnd: { $exists: false } },
-                { dealEnd: null },
-                { dealEnd: { $gt: now } },
-              ],
-            },
-          ],
-        },
-      },
+      { $match: buildActiveDealMatch(now) },
       ...computeDiscountFields,
       { $sort: { discountPercent: -1, createdAt: -1 } },
       { $limit: 10 },
@@ -86,6 +117,17 @@ router.get('/deals', async (req, res) => {
   } catch (error) {
     console.error('Error fetching deals:', error);
     res.status(500).json({ message: 'Failed to fetch deals' });
+  }
+});
+
+// GET /api/products/categories - Distinct product categories for filtering
+router.get('/categories', async (req, res) => {
+  try {
+    const categories = await Product.distinct('category');
+    res.json(categories.filter(Boolean));
+  } catch (error) {
+    console.error('Error fetching categories:', error);
+    res.status(500).json({ message: 'Failed to fetch categories' });
   }
 });
 
