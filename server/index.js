@@ -2,12 +2,14 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+
 const productsRouter = require('./routes/products');
 const authRouter = require('./routes/auth');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Ensure JWT_SECRET is set
 if (!process.env.JWT_SECRET) {
   console.error('JWT_SECRET is not defined in environment variables.');
   process.exit(1);

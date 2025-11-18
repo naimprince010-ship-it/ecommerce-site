@@ -1,14 +1,16 @@
 import axios from 'axios';
 
-// Resolve base URL from environment or fall back to the deployed Render API.
+// Base URL from environment or fallback to Render API
 export const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || 'https://ecommerce-site-c57v.onrender.com';
+  import.meta.env.VITE_API_BASE_URL ||
+  'https://ecommerce-site-c57v.onrender.com';
 
+// Axios instance
 export const api = axios.create({
   baseURL: API_BASE_URL,
 });
 
-// Attach JWT tokens to every request using the Authorization header.
+// Automatically attach JWT token for every request
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
@@ -17,7 +19,7 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Helper to set or clear the auth token for future requests and storage.
+// Helper to set or clear auth token
 export const setAuthToken = (token) => {
   if (token) {
     localStorage.setItem('token', token);
