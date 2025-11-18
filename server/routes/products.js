@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const Product = require('../models/Product');
 const auth = require('../middleware/auth');
 const upload = require('../middleware/upload');
@@ -16,9 +17,14 @@ router.get('/', async (req, res) => {
   }
 });
 
+const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
+
 // GET /api/products/:id - Get a single product by ID
 router.get('/:id', async (req, res) => {
   const { id } = req.params;
+  if (!isValidObjectId(id)) {
+    return res.status(400).json({ message: 'Invalid product ID' });
+  }
   try {
     const product = await Product.findById(id);
     if (!product) {
@@ -63,6 +69,9 @@ router.post('/', auth, maybeUpload, async (req, res) => {
 // PUT /api/products/:id - Update a product
 router.put('/:id', auth, async (req, res) => {
   const { id } = req.params;
+  if (!isValidObjectId(id)) {
+    return res.status(400).json({ message: 'Invalid product ID' });
+  }
   const update = { ...req.body };
   if (typeof update.price !== 'undefined') {
     const priceNumber = Number(update.price);
@@ -92,6 +101,9 @@ router.put('/:id', auth, async (req, res) => {
 // DELETE /api/products/:id - Delete a product
 router.delete('/:id', auth, async (req, res) => {
   const { id } = req.params;
+  if (!isValidObjectId(id)) {
+    return res.status(400).json({ message: 'Invalid product ID' });
+  }
   try {
     const deletedProduct = await Product.findByIdAndDelete(id);
 
