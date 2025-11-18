@@ -135,3 +135,42 @@ button:hover {
 .muted {
   color: #475569;
 }
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+}
+
+.checkbox input {
+  width: auto;
+  margin: 0;
+}
+
+.grid.two-col {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem 1rem;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  background: #e0f2fe;
+  color: #0369a1;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.pill.small {
+  font-size: 0.75rem;
+}
+
+.pill.success {
+  background: #dcfce7;
+  color: #15803d;
+}

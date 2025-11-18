@@ -6,23 +6,28 @@ const placeholderImage =
 
 export default function App() {
   const [products, setProducts] = useState([]);
+  const [deals, setDeals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchData = async () => {
       try {
-        const { data } = await api.get('/api/products');
-        setProducts(Array.isArray(data) ? data : []);
+        const [productsRes, dealsRes] = await Promise.all([
+          api.get('/api/products'),
+          api.get('/api/products/deals'),
+        ]);
+        setProducts(Array.isArray(productsRes.data) ? productsRes.data : []);
+        setDeals(Array.isArray(dealsRes.data) ? dealsRes.data : []);
       } catch (err) {
         setError('Unable to load products right now. Please try again later.');
-        console.error('Error fetching products:', err);
+        console.error('Error fetching data:', err);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchProducts();
+    fetchData();
   }, []);
 
   const features = useMemo(
@@ -54,10 +59,20 @@ export default function App() {
     console.log(`Add to Cart clicked for ${productName}`);
   };
 
+  const bestDeal = deals[0];
+
   return (
     <div className="app">
+      <div className="top-strip">
+        <p>
+          Today&apos;s Super Discounts — grab limited-time deals before they&apos;re gone!
+          <button type="button" className="link-button" onClick={scrollToProducts}>
+            Shop deals
+          </button>
+        </p>
+      </div>
       <header className="navbar">
-        <div className="nav-brand">Ecommerce Store</div>
+        <div className="nav-brand">Super Discount</div>
         <nav className="nav-links">
           <a href="#hero">Home</a>
           <button type="button" onClick={scrollToProducts} className="link-button">
@@ -70,41 +85,100 @@ export default function App() {
       <main>
         <section id="hero" className="hero">
           <div className="hero-content">
-            <p className="badge">New season arrivals</p>
-            <h1>Discover products you&apos;ll love.</h1>
+            <p className="badge">Super Deal of the day</p>
+            <h1>
+              {bestDeal ? `${bestDeal.name}` : 'Welcome to the Super Discount store'}
+            </h1>
             <p className="subtitle">
-              Curated collections, modern styles, and everyday essentials — all in one place.
+              {bestDeal
+                ? `Save ${bestDeal.discountPercent}% on our top pick today. Limited time only!`
+                : 'Discover our latest discounts and everyday essentials.'}
             </p>
+            <div className="hero-pricing">
+              {bestDeal ? (
+                <>
+                  <span className="muted strike">${bestDeal.regularPrice?.toFixed(2)}</span>
+                  <span className="hero-price">${bestDeal.discountPrice?.toFixed(2)}</span>
+                  <span className="pill">-{bestDeal.discountPercent}%</span>
+                </>
+              ) : (
+                <span className="muted">Fresh deals added daily</span>
+              )}
+            </div>
             <div className="hero-actions">
               <button className="btn primary" onClick={scrollToProducts}>
                 Shop Now
               </button>
               <button className="btn ghost" type="button">
-                Learn More
+                View All Deals
               </button>
             </div>
           </div>
           <div className="hero-visual" aria-hidden>
             <div className="hero-card">
-              <span className="pill">Bestseller</span>
-              <h3>Everyday Essentials</h3>
-              <p>Everything you need for your daily routine, selected by our team.</p>
+              <span className="pill">Flash Savings</span>
+              <h3>Score extra discounts</h3>
+              <p>Stack savings on top products every single day.</p>
               <div className="hero-grid">
-                <span>Quality</span>
-                <span>Comfort</span>
-                <span>Style</span>
-                <span>Value</span>
+                <span>Up to 70% off</span>
+                <span>Limited drops</span>
+                <span>Trusted brands</span>
+                <span>Fast shipping</span>
               </div>
             </div>
           </div>
         </section>
 
+        <section className="section deals" id="deals">
+          <div className="section-header">
+            <p className="badge">Flash Deals</p>
+            <div>
+              <h2>Today&apos;s Super Discounts</h2>
+              <p className="subtitle">Hot picks with the biggest savings right now.</p>
+            </div>
+          </div>
+          {loading && <p className="muted">Loading deals...</p>}
+          {error && <p className="error">{error}</p>}
+          {!loading && !error && (
+            <div className="deals-row">
+              {deals.length === 0 && <p className="muted">No active deals yet. Check back soon.</p>}
+              {deals.map((product) => (
+                <article key={product._id} className="deal-card">
+                  <div className="deal-image">
+                    <img
+                      src={product.imageUrl || placeholderImage}
+                      alt={product.name}
+                      loading="lazy"
+                    />
+                    <span className="pill">-{product.discountPercent}%</span>
+                  </div>
+                  <div className="deal-body">
+                    <h3>{product.name}</h3>
+                    <p className="muted category">{product.category || 'Special deal'}</p>
+                    <div className="price-row">
+                      <span className="strike">${product.regularPrice?.toFixed(2)}</span>
+                      <strong>${product.discountPrice?.toFixed(2)}</strong>
+                    </div>
+                    <button
+                      className="btn primary full"
+                      type="button"
+                      onClick={() => handleAddToCart(product.name)}
+                    >
+                      Add to Cart
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </section>
+
         <section id="products" className="section">
           <div className="section-header">
-            <p className="badge">Shop</p>
+            <p className="badge">All Products</p>
             <div>
-              <h2>Products you might like</h2>
-              <p className="subtitle">Hand-picked items from our latest collection.</p>
+              <h2>Shop the entire catalog</h2>
+              <p className="subtitle">Everything sorted by the biggest discounts first.</p>
             </div>
           </div>
 
@@ -121,11 +195,15 @@ export default function App() {
                       alt={product.name}
                       loading="lazy"
                     />
+                    <span className="badge deal">-{product.discountPercent}%</span>
                   </div>
                   <div className="product-body">
                     <div className="product-meta">
                       <h3>{product.name}</h3>
-                      <p className="price">${product.price?.toFixed(2) || '—'}</p>
+                      <p className="price">
+                        <span className="strike">${product.regularPrice?.toFixed(2)}</span>
+                        <span className="discount">${product.discountPrice?.toFixed(2)}</span>
+                      </p>
                     </div>
                     <p className="description">{product.description}</p>
                     <button
@@ -163,7 +241,7 @@ export default function App() {
       </main>
 
       <footer className="footer">
-        <p>© {new Date().getFullYear()} Ecommerce Store. All rights reserved.</p>
+        <p>© {new Date().getFullYear()} Super Discount. All rights reserved.</p>
         <div className="social-links">
           <a href="https://www.instagram.com" target="_blank" rel="noreferrer">
             Instagram

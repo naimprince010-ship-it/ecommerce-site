@@ -40,6 +40,20 @@ a:hover {
   min-height: 100vh;
 }
 
+.top-strip {
+  background: #0ea5e9;
+  color: white;
+  padding: 10px 24px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.top-strip .link-button {
+  margin-left: 8px;
+  color: white;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.6);
+}
+
 .navbar {
   position: sticky;
   top: 0;
@@ -65,7 +79,7 @@ a:hover {
   font-weight: 500;
 }
 
-.nav-links .link-button {
+.link-button {
   background: none;
   border: none;
   padding: 0;
@@ -102,6 +116,20 @@ main {
 .hero-content .subtitle {
   color: var(--muted);
   max-width: 540px;
+}
+
+.hero-pricing {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.hero-price {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--primary);
 }
 
 .hero-actions {
@@ -222,6 +250,18 @@ main {
   flex-direction: column;
 }
 
+.badge.deal {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.product-image {
+  position: relative;
+}
+
 .product-image img {
   width: 100%;
   height: 200px;
@@ -248,15 +288,77 @@ main {
   font-size: 1.1rem;
 }
 
+.strike {
+  text-decoration: line-through;
+  color: var(--muted);
+}
+
 .price {
   margin: 0;
   color: var(--primary);
   font-weight: 700;
 }
 
+.price .discount {
+  margin-left: 8px;
+}
+
 .description {
   margin: 0;
   color: var(--muted);
+}
+
+.deals-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  margin-top: 12px;
+}
+
+.deal-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+}
+
+.deal-image {
+  position: relative;
+}
+
+.deal-image img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  display: block;
+}
+
+.deal-image .pill {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(239, 68, 68, 0.9);
+  color: white;
+}
+
+.deal-body {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.price-row {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.category {
+  margin: 0;
 }
 
 .btn {
