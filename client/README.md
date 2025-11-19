@@ -1,10 +1,18 @@
-# Client
+# Storefront Preview
 
-This directory contains the front-end application for the e-commerce project. We will build the user interface using **Next.js** and **React**.
+Run a production-like preview locally and open it from any device on your network:
 
-To get started locally:
-1. Install Node.js and Yarn/NPM.
-2. Run `npx create-next-app@latest` to bootstrap the Next.js app.
-3. Move the generated files into this `client` directory.
+```bash
+cd client
+npm install
+npm run build
+npm run preview
+```
 
-Additional customizations and components will be added here as development progresses.
+With the Vite preview server set to `0.0.0.0` on port `4173`, your preview URL will be:
+
+```
+http://localhost:4173
+```
+
+If you're on a different machine, replace `localhost` with your host's IP (e.g., `http://192.168.1.10:4173`).
