@@ -29,7 +29,7 @@ const isSuperDealActive = (product) => {
   return now >= start && now <= end;
 };
 
-export default function Storefront() {
+export default function Storefront({ onNavigate }) {
   const [deals, setDeals] = useState([]);
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -42,6 +42,15 @@ export default function Storefront() {
   const [timeLeft, setTimeLeft] = useState('');
 
   const limit = 8;
+
+  const navigate = (path) => {
+    if (typeof onNavigate === 'function') {
+      onNavigate(path);
+    } else {
+      window.history.pushState({}, '', path);
+      window.location.assign(path);
+    }
+  };
 
   const activeDeals = useMemo(() => deals.filter(isSuperDealActive), [deals]);
   const bestDeal = activeDeals[0];
@@ -129,6 +138,8 @@ export default function Storefront() {
     setCategory(nextCategory);
     setPage(1);
   };
+
+  const goToProduct = (id) => navigate(`/product/${id}`);
 
   const scrollToProducts = () => {
     const target = document.getElementById('products');
@@ -394,6 +405,13 @@ export default function Storefront() {
                     </p>
                     <button
                       type="button"
+                      className="mt-2 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-800 transition hover:bg-slate-50"
+                      onClick={() => goToProduct(deal._id)}
+                    >
+                      View details
+                    </button>
+                    <button
+                      type="button"
                       className="mt-2 w-full rounded-xl bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
                       onClick={() => console.log('Add to cart', deal.name)}
                     >
@@ -486,13 +504,22 @@ export default function Storefront() {
                         Stock: {typeof product.stock === 'number' ? product.stock : 'N/A'}
                       </p>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => console.log('Add to cart', product.name)}
-                      className="mt-auto rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
-                    >
-                      Add to cart
-                    </button>
+                    <div className="mt-auto flex flex-col gap-2 sm:flex-row">
+                      <button
+                        type="button"
+                        onClick={() => goToProduct(product._id)}
+                        className="w-full rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-800 shadow-sm transition hover:bg-slate-50"
+                      >
+                        View details
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => console.log('Add to cart', product.name)}
+                        className="w-full rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
+                      >
+                        Add to cart
+                      </button>
+                    </div>
                   </div>
                 </article>
               ))}

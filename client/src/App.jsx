@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import AdminDashboard from './pages/AdminDashboard';
 import Storefront from './pages/Storefront';
+import ProductDetails from './pages/ProductDetails';
 
 export default function App() {
   const [path, setPath] = useState(() => window.location.pathname);
@@ -11,9 +12,21 @@ export default function App() {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
+  const navigate = (nextPath) => {
+    if (nextPath === path) return;
+    window.history.pushState({}, '', nextPath);
+    setPath(nextPath);
+  };
+
+  const productMatch = path.match(/^\/product\/([^/]+)$/);
+
   if (path.startsWith('/admin')) {
     return <AdminDashboard />;
   }
 
-  return <Storefront />;
+  if (productMatch) {
+    return <ProductDetails productId={productMatch[1]} onNavigate={navigate} />;
+  }
+
+  return <Storefront onNavigate={navigate} />;
 }
