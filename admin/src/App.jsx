@@ -36,7 +36,8 @@ function App() {
   const fetchProducts = async () => {
     try {
       const res = await api.get('/api/products');
-      setProducts(res.data);
+      const list = Array.isArray(res.data?.products) ? res.data.products : [];
+      setProducts(list);
     } catch (error) {
       console.error('Failed to load products', error);
       setMessage('Failed to load products');
