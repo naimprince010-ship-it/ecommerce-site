@@ -1,7 +1,11 @@
-import { useEffect, useState } from 'react';
-import { api, API_BASE_URL, setAuthToken } from './api';
+import { useEffect, useMemo, useState } from 'react';
+import { API_BASE_URL, api, setAuthToken } from '../api';
+import '../admin.css';
 
-function App() {
+const sortByDiscount = (items) =>
+  [...items].sort((a, b) => Number(b.discountPercent || 0) - Number(a.discountPercent || 0));
+
+export default function AdminDashboard() {
   const [credentials, setCredentials] = useState({ email: '', password: '' });
   const [token, setToken] = useState(localStorage.getItem('token') || '');
   const [user, setUser] = useState(() => {
@@ -23,6 +27,8 @@ function App() {
   const [image, setImage] = useState(null);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const sortedProducts = useMemo(() => sortByDiscount(products), [products]);
 
   useEffect(() => {
     if (token) {
@@ -164,9 +170,7 @@ function App() {
             <input
               type="email"
               value={credentials.email}
-              onChange={(e) =>
-                setCredentials((prev) => ({ ...prev, email: e.target.value }))
-              }
+              onChange={(e) => setCredentials((prev) => ({ ...prev, email: e.target.value }))}
               required
             />
           </label>
@@ -190,8 +194,7 @@ function App() {
           {message && <p className="status">{message}</p>}
         </form>
         <p className="hint">
-          Need an account? Create one via <code>/api/auth/register</code> using
-          Postman.
+          Need an account? Create one via <code>/api/auth/register</code> using Postman.
         </p>
       </div>
     );
@@ -201,170 +204,131 @@ function App() {
     <div className="container">
       <header>
         <div>
-          <h1>Admin Dashboard</h1>
-          <p>Signed in as {user?.email}</p>
+          <h1>Ecommerce Admin</h1>
+          <p className="muted">{API_BASE_URL}</p>
         </div>
         <div className="header-actions">
-          <button onClick={handleLogout}>Logout</button>
+          {user && <span className="pill">{user.name}</span>}
+          <button type="button" onClick={handleLogout}>
+            Logout
+          </button>
         </div>
       </header>
 
-      <section className="grid">
+      <div className="grid">
         <form className="card" onSubmit={handleCreate}>
           <h2>Create Product</h2>
-          <label>
-            Name
-            <input
-              type="text"
-              value={form.name}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, name: e.target.value }))
-              }
-              required
-            />
-          </label>
-          <label>
-            Regular Price
-            <input
-              type="number"
-              step="0.01"
-              value={form.regularPrice}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, regularPrice: e.target.value }))
-              }
-              required
-            />
-          </label>
-          <label>
-            Discount Price
-            <input
-              type="number"
-              step="0.01"
-              value={form.discountPrice}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, discountPrice: e.target.value }))
-              }
-              required
-            />
-            <small className="muted">You are giving {discountPercent}% off.</small>
-          </label>
-          <label>
-            Description
-            <textarea
-              value={form.description}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, description: e.target.value }))
-              }
-            />
-          </label>
-          <label>
-            Category
-            <input
-              type="text"
-              value={form.category}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, category: e.target.value }))
-              }
-            />
-          </label>
-          <label className="checkbox">
-            <input
-              type="checkbox"
-              checked={form.isSuperDeal}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, isSuperDeal: e.target.checked }))
-              }
-            />
-            <span>Is Super Deal</span>
-          </label>
           <div className="grid two-col">
             <label>
-              Deal Start
+              Name
               <input
-                type="date"
-                value={form.dealStart}
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, dealStart: e.target.value }))
-                }
+                type="text"
+                value={form.name}
+                onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
+                required
               />
             </label>
             <label>
-              Deal End
+              Category
               <input
-                type="date"
+                type="text"
+                value={form.category}
+                onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value }))}
+              />
+            </label>
+            <label>
+              Regular Price
+              <input
+                type="number"
+                value={form.regularPrice}
+                onChange={(e) => setForm((prev) => ({ ...prev, regularPrice: e.target.value }))}
+                required
+              />
+            </label>
+            <label>
+              Discount Price
+              <input
+                type="number"
+                value={form.discountPrice}
+                onChange={(e) => setForm((prev) => ({ ...prev, discountPrice: e.target.value }))}
+                required
+              />
+            </label>
+            <label>
+              Stock
+              <input
+                type="number"
+                value={form.stock}
+                onChange={(e) => setForm((prev) => ({ ...prev, stock: e.target.value }))}
+              />
+            </label>
+            <label className="checkbox">
+              <input
+                type="checkbox"
+                checked={form.isSuperDeal}
+                onChange={(e) => setForm((prev) => ({ ...prev, isSuperDeal: e.target.checked }))}
+              />
+              Mark as super deal
+            </label>
+            <label>
+              Deal start
+              <input
+                type="datetime-local"
+                value={form.dealStart}
+                onChange={(e) => setForm((prev) => ({ ...prev, dealStart: e.target.value }))}
+              />
+            </label>
+            <label>
+              Deal end
+              <input
+                type="datetime-local"
                 value={form.dealEnd}
-                onChange={(e) =>
-                  setForm((prev) => ({ ...prev, dealEnd: e.target.value }))
-                }
+                onChange={(e) => setForm((prev) => ({ ...prev, dealEnd: e.target.value }))}
               />
             </label>
           </div>
           <label>
-            Stock
-            <input
-              type="number"
-              min="0"
-              value={form.stock}
-              onChange={(e) =>
-                setForm((prev) => ({ ...prev, stock: e.target.value }))
-              }
+            Description
+            <textarea
+              value={form.description}
+              onChange={(e) => setForm((prev) => ({ ...prev, description: e.target.value }))}
             />
           </label>
           <label>
-            Image
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(e) => setImage(e.target.files[0])}
-            />
+            Product image
+            <input type="file" accept="image/*" onChange={(e) => setImage(e.target.files[0])} />
           </label>
+          {image && <img src={URL.createObjectURL(image)} alt="Preview" className="thumb" />}
+          <div className="pill success">Discount: {discountPercent}%</div>
           <button type="submit" disabled={loading}>
-            {loading ? 'Saving...' : 'Create'}
+            {loading ? 'Saving...' : 'Create product'}
           </button>
           {message && <p className="status">{message}</p>}
         </form>
 
         <div className="card">
-          <h2>Products</h2>
-          {products.length === 0 ? (
-            <p>No products yet.</p>
-          ) : (
-            <ul className="product-list">
-              {products.map((product) => (
-                <li key={product._id} className="product-item">
-                  <div>
-                    <strong>{product.name}</strong>
-                    <p>
-                      <span className="muted">${product.regularPrice?.toFixed(2)}</span>{' '}
-                      <strong>${product.discountPrice?.toFixed(2)}</strong>
-                      {typeof product.discountPercent === 'number' && (
-                        <span className="pill small">-{product.discountPercent}%</span>
-                      )}
-                    </p>
-                    <p className="muted">Stock: {product.stock ?? 0}</p>
-                    {product.isSuperDeal && <p className="pill success">Super Deal</p>}
-                    {product.description && (
-                      <p className="muted">{product.description}</p>
-                    )}
-                    {product.imageUrl && (
-                      <img
-                        src={product.imageUrl}
-                        alt={product.name}
-                        className="thumb"
-                      />
-                    )}
-                  </div>
-                  <button onClick={() => handleDelete(product._id)}>
-                    Delete
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
+          <div className="header">
+            <h2>Products</h2>
+            <p className="muted">Sorted by biggest discount</p>
+          </div>
+          <ul className="product-list">
+            {sortedProducts.map((product) => (
+              <li key={product._id} className="product-item">
+                <div>
+                  <div className="pill small">-{product.discountPercent}%</div>
+                  <p className="muted">{product.category || 'General'}</p>
+                  <strong>{product.name}</strong>
+                  <p className="muted">${product.discountPrice}</p>
+                  {product.isSuperDeal && <div className="pill success">Super Deal</div>}
+                </div>
+                <button type="button" onClick={() => handleDelete(product._id)}>
+                  Delete
+                </button>
+              </li>
+            ))}
+          </ul>
         </div>
-      </section>
+      </div>
     </div>
   );
 }
-
-export default App;
