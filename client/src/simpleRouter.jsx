@@ -53,9 +53,10 @@ const matchRoutes = (children, pathname, basePath = '') => {
 const RenderMatch = ({ match }) => {
   if (!match) return null;
   const nested = match.child ? <RenderMatch match={match.child} /> : null;
+  const content = match.element ?? nested;
   return (
     <OutletElementContext.Provider value={nested}>
-      {match.element}
+      {content}
     </OutletElementContext.Provider>
   );
 };
@@ -125,7 +126,10 @@ export const NavLink = ({ to, children, className, onClick, ...rest }) => {
     if (onClick) onClick(e);
     navigate(to);
   };
-  const isActive = normalizePath(pathname) === normalizePath(to);
+  const normalizedPath = normalizePath(pathname);
+  const normalizedTo = normalizePath(to);
+  const isActive =
+    normalizedPath === normalizedTo || normalizedPath.startsWith(`${normalizedTo}/`);
   const resolvedClassName =
     typeof className === 'function' ? className({ isActive }) : className || '';
   const classes = `${resolvedClassName} ${isActive ? 'active' : ''}`.trim();
@@ -140,3 +144,11 @@ export const NavLink = ({ to, children, className, onClick, ...rest }) => {
 export const useNavigate = () => useContext(RouterContext).navigate;
 export const useLocation = () => ({ pathname: useContext(RouterContext).pathname });
 export const useOutletContext = () => useContext(OutletDataContext);
+
+export const Navigate = ({ to, replace = false }) => {
+  const { navigate } = useContext(RouterContext);
+  useEffect(() => {
+    navigate(to, { replace });
+  }, [navigate, replace, to]);
+  return null;
+};

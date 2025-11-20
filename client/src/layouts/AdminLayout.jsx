@@ -1,8 +1,19 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
 
-export default function AdminLayout({ user, onLogout }) {
+export default function AdminLayout({ user, onLogout, outletContext }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const email = user?.email || 'Admin';
+
+  const navItems = useMemo(
+    () => [
+      { to: '/admin/products', label: 'Dashboard / Products' },
+      { to: '/admin/orders', label: 'Orders' },
+      { to: '/admin/customers', label: 'Customers' },
+      { to: '/admin/settings', label: 'Settings' },
+    ],
+    [],
+  );
 
   const toggleSidebar = () => setSidebarOpen((prev) => !prev);
   const closeSidebar = () => setSidebarOpen(false);
@@ -10,31 +21,33 @@ export default function AdminLayout({ user, onLogout }) {
   return (
     <div className="admin-shell">
       <aside className={`admin-sidebar ${sidebarOpen ? 'open' : ''}`}>
-        <div className="brand">Ecommerce Admin</div>
+        <div className="brand">Super Deal Admin</div>
         <nav>
-          <NavItem to="/admin" label="Dashboard" onNavigate={closeSidebar} />
-          <NavItem to="/admin/products" label="Products" onNavigate={closeSidebar} />
-          <NavItem to="/admin/orders" label="Orders" onNavigate={closeSidebar} />
-          <NavItem to="/admin/customers" label="Customers" onNavigate={closeSidebar} />
-          <NavItem to="/admin/settings" label="Settings" onNavigate={closeSidebar} />
+          {navItems.map((item) => (
+            <NavItem key={item.to} to={item.to} label={item.label} onNavigate={closeSidebar} />
+          ))}
         </nav>
+        <button type="button" className="ghost" onClick={onLogout}>
+          Logout
+        </button>
       </aside>
 
       <div className="admin-main">
         <header className="admin-topbar">
-          <button type="button" className="menu-toggle" onClick={toggleSidebar}>
+          <button type="button" className="menu-toggle" onClick={toggleSidebar} aria-label="Toggle menu">
             ☰
           </button>
+          <div className="project">Super Deal Admin</div>
           <div className="spacer" />
           <div className="topbar-actions">
-            {user?.email && <span className="pill">{user.email}</span>}
+            <span className="pill subtle">{email}</span>
             <button type="button" onClick={onLogout}>
               Logout
             </button>
           </div>
         </header>
         <main className="admin-content">
-          <Outlet />
+          <Outlet context={outletContext} />
         </main>
       </div>
     </div>

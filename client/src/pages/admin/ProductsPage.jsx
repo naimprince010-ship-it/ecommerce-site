@@ -22,6 +22,7 @@ export default function ProductsPage() {
   const [image, setImage] = useState(null);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [fetchLoading, setFetchLoading] = useState(false);
 
   const sortedProducts = useMemo(() => sortByDiscount(products), [products]);
 
@@ -32,13 +33,17 @@ export default function ProductsPage() {
   }, [token]);
 
   const fetchProducts = async () => {
+    setFetchLoading(true);
     try {
       const res = await api.get('/api/products');
       const list = Array.isArray(res.data?.products) ? res.data.products : [];
       setProducts(list);
+      setMessage('');
     } catch (error) {
       console.error('Failed to load products', error);
       setMessage('Failed to load products');
+    } finally {
+      setFetchLoading(false);
     }
   };
 
@@ -128,6 +133,7 @@ export default function ProductsPage() {
           <h1>Products</h1>
           <p className="muted">Sorted by biggest discount</p>
         </div>
+        {fetchLoading && <div className="pill subtle">Loading…</div>}
       </header>
 
       <div className="grid">
@@ -226,22 +232,31 @@ export default function ProductsPage() {
             <h2>Products</h2>
             <p className="muted">Sorted by biggest discount</p>
           </div>
-          <ul className="product-list">
-            {sortedProducts.map((product) => (
-              <li key={product._id} className="product-item">
-                <div>
-                  <div className="pill small">-{product.discountPercent}%</div>
-                  <p className="muted">{product.category || 'General'}</p>
-                  <strong>{product.name}</strong>
-                  <p className="muted">${product.discountPrice}</p>
-                  {product.isSuperDeal && <div className="pill success">Super Deal</div>}
-                </div>
-                <button type="button" onClick={() => handleDelete(product._id)}>
-                  Delete
-                </button>
-              </li>
-            ))}
-          </ul>
+          {fetchLoading ? (
+            <div className="loading">Loading products…</div>
+          ) : sortedProducts.length === 0 ? (
+            <div className="empty-state">
+              <h3>No products yet</h3>
+              <p className="muted">Create your first product to see it in the list.</p>
+            </div>
+          ) : (
+            <ul className="product-list">
+              {sortedProducts.map((product) => (
+                <li key={product._id} className="product-item">
+                  <div>
+                    <div className="pill small">-{product.discountPercent}%</div>
+                    <p className="muted">{product.category || 'General'}</p>
+                    <strong>{product.name}</strong>
+                    <p className="muted">${product.discountPrice}</p>
+                    {product.isSuperDeal && <div className="pill success">Super Deal</div>}
+                  </div>
+                  <button type="button" onClick={() => handleDelete(product._id)}>
+                    Delete
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
     </div>
