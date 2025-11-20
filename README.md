@@ -64,3 +64,12 @@ VITE_API_BASE_URL="https://your-render-app.onrender.com" npm run dev
 Open the printed localhost URL to use the admin panel. It supports login, listing products, creating a product (including image upload), and deleting a product. The JWT token is stored in `localStorage` for authenticated actions.
 
 By default, the admin panel targets `https://ecommerce-site-onrender.com`; set `VITE_API_BASE_URL` to your actual Render URL for deployments.
+
+## Admin URLs
+Use the same domain as your deployment (or `localhost` when running locally) and navigate to:
+
+* `/admin` – login screen; after signing in you are redirected to `/admin/products`.
+* `/admin/products` – product creation and listing.
+* `/admin/orders` – orders placeholder.
+* `/admin/customers` – customers placeholder.
+* `/admin/settings` – settings placeholder.
