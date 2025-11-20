@@ -34,7 +34,7 @@ const matchRoutes = (children, pathname, basePath = '') => {
         : normalizePath(`${normalizedBase}/${path || ''}`);
 
     const exactMatch = normalizedPathname === routePath;
-    const nestedMatch = normalizedPathname.startsWith(`${routePath}/`);
+    const nestedMatch = !index && normalizedPathname.startsWith(`${routePath}/`);
 
     if (isWildcard || exactMatch || nestedMatch) {
       const childMatch = nested

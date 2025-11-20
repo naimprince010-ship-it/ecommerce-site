@@ -199,7 +199,7 @@ export default function Storefront() {
             </button>
             <a
               href="/admin"
-              className="hidden rounded-full border border-slate-200 px-3 py-2 text-xs font-semibold text-blue-700 shadow-sm transition hover:bg-blue-50 md:inline-flex"
+              className="inline-flex rounded-full border border-slate-200 px-3 py-2 text-xs font-semibold text-blue-700 shadow-sm transition hover:bg-blue-50"
             >
               Admin
             </a>
